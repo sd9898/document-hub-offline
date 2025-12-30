@@ -5,13 +5,22 @@ import { DropZone } from "@/components/DropZone";
 import { FileList } from "@/components/FileList";
 import { ProcessingStatus } from "@/components/ProcessingStatus";
 import { Button } from "@/components/ui/button";
-import { Play, Plus, Download, RotateCcw } from "lucide-react";
+import { Play, Plus, Download, RotateCcw, CheckCircle2, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ToolPageProps {
   tool: Tool;
   onBack: () => void;
 }
+
+const iconBgStyles: Record<string, string> = {
+  pdf: "bg-gradient-to-br from-pdf to-[hsl(20_90%_50%)]",
+  word: "bg-gradient-to-br from-word to-[hsl(190_100%_45%)]",
+  excel: "bg-gradient-to-br from-excel to-[hsl(170_80%_40%)]",
+  powerpoint: "bg-gradient-to-br from-powerpoint to-[hsl(45_95%_50%)]",
+  image: "bg-gradient-to-br from-image to-[hsl(310_85%_55%)]",
+};
 
 export function ToolPage({ tool, onBack }: ToolPageProps) {
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -33,7 +42,7 @@ export function ToolPage({ tool, onBack }: ToolPageProps) {
       setStatus("idle");
 
       toast({
-        title: "Files added",
+        title: "Files added successfully",
         description: `${newFiles.length} file(s) selected from your computer`,
       });
     },
@@ -73,9 +82,9 @@ export function ToolPage({ tool, onBack }: ToolPageProps) {
           });
           return 100;
         }
-        return prev + Math.random() * 15;
+        return prev + Math.random() * 12;
       });
-    }, 200);
+    }, 150);
   }, [files, toast]);
 
   const handleReset = useCallback(() => {
@@ -98,30 +107,52 @@ export function ToolPage({ tool, onBack }: ToolPageProps) {
   const Icon = tool.icon;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen flex-col bg-background overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-mesh pointer-events-none" />
+      <div className="fixed inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
+      
+      {/* Floating Orbs */}
+      <div className="orb orb-purple w-[400px] h-[400px] -top-32 -right-32 animate-float" />
+      <div className="orb orb-blue w-[300px] h-[300px] bottom-20 -left-20 animate-float" style={{ animationDelay: '-2s' }} />
+
       <Header showBack onBack={onBack} title={tool.name} />
 
-      <main className="flex-1 px-8 py-10">
-        <div className="mx-auto max-w-4xl space-y-8">
+      <main className="relative flex-1 px-8 py-12">
+        <div className="mx-auto max-w-4xl space-y-10">
           {/* Tool Info */}
-          <div className="flex items-center gap-4 animate-fade-up">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <Icon className="h-8 w-8 text-primary" />
+          <div className="flex items-center gap-5 animate-fade-up">
+            <div className={cn(
+              "flex h-20 w-20 items-center justify-center rounded-2xl shadow-glow-lg",
+              iconBgStyles[tool.category]
+            )}>
+              <Icon className="h-10 w-10 text-white" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold font-display text-foreground">
                 {tool.name}
               </h2>
-              <p className="text-muted-foreground">{tool.description}</p>
+              <p className="mt-1 text-lg text-muted-foreground">{tool.description}</p>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="chip">
+                  Input: {tool.inputFormats.join(", ").toUpperCase()}
+                </span>
+                <span className="text-muted-foreground">→</span>
+                <span className="chip chip-primary">
+                  Output: {tool.outputFormat}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Drop Zone or File List */}
           {files.length === 0 ? (
-            <DropZone
-              acceptedFormats={tool.inputFormats}
-              onFilesSelected={handleFilesSelected}
-            />
+            <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+              <DropZone
+                acceptedFormats={tool.inputFormats}
+                onFilesSelected={handleFilesSelected}
+              />
+            </div>
           ) : (
             <div className="space-y-6 animate-fade-up">
               <FileList
@@ -147,8 +178,8 @@ export function ToolPage({ tool, onBack }: ToolPageProps) {
                     e.target.value = "";
                   }}
                 />
-                <Button variant="outline" size="lg" asChild>
-                  <span className="cursor-pointer">
+                <Button variant="outline" size="lg" asChild className="cursor-pointer hover:bg-primary/5 hover:border-primary/30">
+                  <span>
                     <Plus className="mr-2 h-5 w-5" />
                     Add More Files
                   </span>
@@ -161,34 +192,40 @@ export function ToolPage({ tool, onBack }: ToolPageProps) {
           <ProcessingStatus status={status} progress={progress} />
 
           {/* Actions */}
-          <div className="flex items-center justify-center gap-4 pt-4">
+          <div className="flex items-center justify-center gap-4 pt-6">
             {status === "complete" ? (
-              <>
-                <Button
-                  variant="action"
-                  size="xl"
-                  onClick={() => {
-                    toast({
-                      title: "File saved",
-                      description:
-                        "Output file has been saved to your selected location",
-                    });
-                  }}
-                >
-                  <Download className="mr-2 h-5 w-5" />
-                  Save Output
-                </Button>
-                <Button variant="outline" size="lg" onClick={handleReset}>
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Start Over
-                </Button>
-              </>
+              <div className="flex flex-col items-center gap-6 animate-fade-up">
+                <div className="flex items-center gap-3 text-excel">
+                  <CheckCircle2 className="h-6 w-6" />
+                  <span className="text-lg font-medium">Processing Complete!</span>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <Button
+                    size="lg"
+                    onClick={() => {
+                      toast({
+                        title: "File saved",
+                        description: "Output file has been saved to your selected location",
+                      });
+                    }}
+                    className="action-button"
+                  >
+                    <Download className="mr-2 h-5 w-5" />
+                    Save Output
+                  </Button>
+                  <Button variant="outline" size="lg" onClick={handleReset} className="hover:bg-primary/5 hover:border-primary/30">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Start Over
+                  </Button>
+                </div>
+              </div>
             ) : (
               <Button
-                variant="action"
-                size="xl"
+                size="lg"
                 onClick={handleProcess}
                 disabled={files.length === 0 || status === "processing"}
+                className="action-button"
               >
                 <Play className="mr-2 h-5 w-5" />
                 {getActionText()}
@@ -199,12 +236,12 @@ export function ToolPage({ tool, onBack }: ToolPageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border px-8 py-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm text-muted-foreground">
-            Output: <span className="font-medium text-foreground">{tool.outputFormat}</span>{" "}
-            • Files are processed locally on your computer
-          </p>
+      <footer className="relative border-t border-border/50 px-8 py-6 glass">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+            <Shield className="h-4 w-4 text-primary" />
+            <span>Files are processed locally on your computer • <span className="text-foreground font-medium">100% Private</span></span>
+          </div>
         </div>
       </footer>
     </div>
